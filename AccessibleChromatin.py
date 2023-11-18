@@ -17,7 +17,7 @@ python data_analysis.py [fastq文件1] [fastq文件2（可选）]
 import os  # 导入os模块，用来进行文件和目录操作
 import sys  # 导入sys模块，用于从命令行获取参数
 import subprocess  # 导入subprocess模块，用于执行外部命令
-
+from computerGS import File_reader
 # 定义各个工具的路径
 fastp = "/public/home/changjianye/anaconda3/envs/cuttag/bin/fastp"  # fastp工具路径
 samtools = "/public/software/env01/bin/samtools"  # samtools工具路径
@@ -25,6 +25,8 @@ bowtie2 = "/public/home/changjianye/anaconda3/envs/cuttag/bin/bowtie2"  # bowtie
 picard = "/public/home/changjianye/anaconda3/envs/cuttag/bin/picard"
 sambamba = "/public/home/changjianye/anaconda3/envs/cuttag/bin/sambamba"
 macs2 = "/public/home/changjianye/anaconda3/envs/cuttag/bin/macs2"
+alignmentSieve = "/public/home/changjianye/anaconda3/envs/cuttag/bin/alignmentSieve"
+bamCoverage = "/public/home/changjianye/anaconda3/envs/cuttag/bin/bamCoverage"
 genome = "/public/home/changjianye/project/hzh/Oryza/Ref/bowtie2/Oryza"  # 参考基因组路径
 
 # 获取输入的fastq文件名
@@ -128,7 +130,7 @@ subprocess.run([
 
 # Shift BAM files using deeptools alignmentSieve
 subprocess.run([
-    "/public/home/changjianye/anaconda3/envs/cuttag/bin/alignmentSieve", "-b",
+    alignmentSieve, "-b",
     output_dir + "bam/" + samplename + "_sorted_rmChrM_rmDup_mapped.bam",
     "-p", str(cores), "--ATACshift",
     "-o", output_dir + "bam/" + samplename + "_sorted_rmChrM_rmDup_mapped_shift.bam"
@@ -150,7 +152,7 @@ subprocess.run([
 ])
 
 subprocess.run([
-    "/public/home/changjianye/anaconda3/envs/cuttag/bin/bamCoverage", "--bam",
+    bamCoverage , "--bam",
     output_dir + "bam/" + samplename + "_sorted_rmChrM_rmDup_mapped_rmbl.bam",
     "--numberOfProcessors", str(cores), "--binSize", "10",
     "--normalizeUsing", "RPKM",
@@ -158,40 +160,26 @@ subprocess.run([
 ])
 
 subprocess.run([
-    "/public/home/changjianye/anaconda3/envs/cuttag/bin/bamCoverage", "--bam",
+    bamCoverage, "--bam",
     output_dir + "bam/" + samplename + "_sorted_rmChrM_rmDup_mapped_rmbl_shift.bam",
     "--numberOfProcessors", str(cores), "--binSize", "10",
     "--normalizeUsing", "RPKM",
     "-o", output_dir + "bigwig/" + samplename + "_RPKM_normalized_shift.bw"
 ])
 
-# Peak calling by MACS2
-genome_size = "1130276682"
+fa, genome_size = File_reader(r"/public/home/changjianye/ATAC/Ref/Oryza.fna")
 
+# Peak calling by MACS2
 subprocess.run([
     macs2, "callpeak",
     "-t", output_dir + "bam/" + samplename + "_sorted_rmChrM_rmDup_mapped_rmbl.bam",
     "-g", genome_size,
     "-n", samplename + "_noShift",
-    "-q", "0.01",
+    "-q", "0.05",
     "--outdir", output_dir + "MACS2",
     "--shift", "-100",
     "--extsize", "200",
     "--nomodel", "-B", "--SPMR",
     "--call-summits"
 ])
-
-subprocess.run([
-    macs2, "callpeak",
-    "-t", output_dir + "bam/" + samplename + "_sorted_rmChrM_rmDup_mapped_rmbl_shift.bam",
-    "-g", genome_size,
-    "-n", samplename + "_shift",
-    "-q", "0.01",
-    "--outdir", output_dir + "MACS2",
-    "--shift", "0",
-    "--extsize", "200",
-    "--nomodel", "-B", "--SPMR",
-    "--call-summits"
-])
-
 print("Analysis complete.")
