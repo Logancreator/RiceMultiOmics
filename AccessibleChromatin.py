@@ -22,7 +22,10 @@ import subprocess  # 导入subprocess模块，用于执行外部命令
 fastp = "/public/home/changjianye/anaconda3/envs/cuttag/bin/fastp"  # fastp工具路径
 samtools = "/public/software/env01/bin/samtools"  # samtools工具路径
 bowtie2 = "/public/home/changjianye/anaconda3/envs/cuttag/bin/bowtie2"  # bowtie2工具路径
-genome = "/public/home/changjianye/project/hzh/Oryza/Oryzabowtie2index/Oryza"  # 参考基因组路径
+picard = "/public/home/changjianye/anaconda3/envs/cuttag/bin/picard"
+sambamba = "/public/home/changjianye/anaconda3/envs/cuttag/bin/sambamba"
+macs2 = "/public/home/changjianye/anaconda3/envs/cuttag/bin/macs2"
+genome = "/public/home/changjianye/project/hzh/Oryza/Ref/bowtie2/Oryza"  # 参考基因组路径
 
 # 获取输入的fastq文件名
 fq_1 = sys.argv[1]  # 第一个fastq文件路径
@@ -54,12 +57,7 @@ subprocess.run([
     "-O", output_dir + "fastp/trimmed_" + samplename + "_R2.fastq.gz",
     "-h", output_dir + "fastp/" + samplename + "_fastp.html",
     "-j", output_dir + "fastp/" + samplename + "_fastp.json",
-    "-w", str(cores),
-    "--cut_tail",
-    "--cut_tail_window_size=1",
-    "--cut_tail_mean_quality=30",
-    "--average_qual=30",
-    "--length_required=20"
+    "-w", str(cores)
 ])
 
 # Map reads to reference genome by bowtie2
@@ -72,6 +70,10 @@ subprocess.run([
     "-1", output_dir + "fastp/trimmed_" + samplename + "_R1.fastq.gz",
     "-2", output_dir + "fastp/trimmed_" + samplename + "_R2.fastq.gz",
     "-S", output_dir + "bam/" + samplename + ".sam"
+])
+# Delete sam file
+subprocess.run([
+    rm output_dir + "bam/" + samplename + ".sam"
 ])
 
 # Compress sam files to bam files
@@ -91,7 +93,7 @@ subprocess.run([
 
 # Remove duplicates using picard
 subprocess.run([
-    "/public/home/changjianye/anaconda3/envs/cuttag/bin/picard", "MarkDuplicates",
+    picard, "MarkDuplicates",
     "I=" + output_dir + "bam/" + samplename + "_sorted_rmChrM.bam",
     "O=" + output_dir + "bam/" + samplename + "_sorted_rmChrM_rmDup.bam",
     "M=" + output_dir + "bam/" + samplename + "_rmDup_metrics.txt",
@@ -111,7 +113,7 @@ subprocess.run([
 
 # Filter and keep the uniquely mapped reads
 subprocess.run([
-    "/public/home/changjianye/anaconda3/envs/cuttag/bin/sambamba", "view",
+    sambamba, "view",
     "-h", "-t", str(cores), "-f", "bam",
     "-F", "[XS] == null and not unmapped",
     output_dir + "bam/" + samplename + "_sorted_rmChrM_rmDup.bam",
@@ -167,7 +169,7 @@ subprocess.run([
 genome_size = "1130276682"
 
 subprocess.run([
-    "/public/home/changjianye/anaconda3/envs/cuttag/bin/macs2", "callpeak",
+    macs2, "callpeak",
     "-t", output_dir + "bam/" + samplename + "_sorted_rmChrM_rmDup_mapped_rmbl.bam",
     "-g", genome_size,
     "-n", samplename + "_noShift",
@@ -180,7 +182,7 @@ subprocess.run([
 ])
 
 subprocess.run([
-    "/public/home/changjianye/anaconda3/envs/cuttag/bin/macs2", "callpeak",
+    macs2, "callpeak",
     "-t", output_dir + "bam/" + samplename + "_sorted_rmChrM_rmDup_mapped_rmbl_shift.bam",
     "-g", genome_size,
     "-n", samplename + "_shift",
@@ -193,4 +195,3 @@ subprocess.run([
 ])
 
 print("Analysis complete.")
-``
