@@ -2,6 +2,9 @@
 
 import os
 import sys
+import time
+import argparse
+import datetime
 import subprocess
 
 # 原始数据路径
@@ -24,7 +27,7 @@ gatk = '/public/home/changjianye/miniconda3/envs/atac/bin/gatk'
 cores = 30
 
 # 打印时间
-print(f"{datetime.now().strftime('%Y/%m/%d_%H:%M:%S')}")
+print(f"{datetime.datetime.now().strftime('%Y/%m/%d_%H:%M:%S')}")
 # 记录所有
 START = time.perf_counter()
 
@@ -32,15 +35,22 @@ START = time.perf_counter()
 bwa_ref = "/public/home/changjianye/goose_ref/AnsCyg"
 
 # 判断索引文件
-if not os.path.isfile(f"{bwa_ref}.fai"):
+if not os.path.isfile(f"{bwa_ref}.fa.fai"):
     print("Genome index not in genome dir ! Now , create it !!!")
-    subprocess.call([f"{samtools}", "faidx", bwa_ref])
+    subprocess.call([f"{samtools}", "faidx", f"{bwa_ref}.fa"])
 else:
-    print("文件存在")
+    print("file exists.")
 
-fq_1 = sys.argv[1]
-fq_2 = sys.argv[2]
+parser = argparse.ArgumentParser(description='Process some files.')
+parser.add_argument('--fq1', help='input fastq file 1')
+parser.add_argument('--fq2', help='input fastq file 2')
+parser.add_argument('--samplename', help='sample name')
 
+args = parser.parse_args()
+
+fq_1 = args.fq1
+fq_2 = args.fq2
+samplename = args.samplename
 
 def get_samplename(fq_1):
     filename = os.path.basename(fq_1)
@@ -54,7 +64,7 @@ def get_samplename(fq_1):
 
     return samplename
 
-samplename = get_samplename(fq_1)
+#samplename = get_samplename(fq_1)
 print(f"Sample name is {samplename}")
 
 output_dir = os.path.join(base_output_dir, samplename)
@@ -70,9 +80,9 @@ fastp_out = os.path.join(output_dir, 'fastp')
 subprocess.call([
     f"{fastp}",
     "-i", fq_1,
-    "-o", f"{trim_out}/${samplename}_fastp_1.fq.gz",
+    "-o", f"{trim_out}/{samplename}_fastp_1.fq.gz",
     "-I", fq_2,
-    "-O", f"{trim_out}/${samplename}_fastp_2.fq.gz",
+    "-O", f"{trim_out}/{samplename}_fastp_2.fq.gz",
     "--trim_poly_x",
     "-h", f"{fastp_out}/{samplename}_fastp.html",
     "-j", f"{fastp_out}/{samplename}_fastp.json",
@@ -85,8 +95,8 @@ subprocess.call([
 #     "--stringency", "5", fq_1, fq_2, "--gzip"
 # ])
 
-clean_fq1 = f"{trim_out}/${samplename}_fastp_1.fq.gz"
-clean_fq2 = f"{trim_out}/${samplename}_fastp_2.fq.gz"
+clean_fq1 = f"{trim_out}/{samplename}_fastp_1.fq.gz"
+clean_fq2 = f"{trim_out}/{samplename}_fastp_2.fq.gz"
 
 label = f"@RG\\tID:{samplename}\\tPL:MGI\\tSM:{samplename}"  # 可以修改
 # 运行BWA
@@ -158,8 +168,7 @@ subprocess.call([
 # 为Indel作过滤
 subprocess.call([
     f"{gatk}", "VariantFiltration", "-V", f"{os.path.splitext(vcf_gz)[0]}.indel.vcf.gz", "--filter-expression",
-    "\"QD < 2.0 || FS > 200.0 || SOR > 10.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0\"", "--filter-name",
-    "Filter", "-O", f"{os.path.splitext(vcf_gz)[0]}.indel.filter.vcf.gz"
+    "QD < 2.0 || FS > 200.0 || SOR > 10.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0", "--filter-name", "Filter", "-O", f"{os.path.splitext(vcf_gz)[0]}.indel.filter.vcf.gz"
 ])
 
 # 使用SelectVariants，选出SNP
@@ -170,8 +179,7 @@ subprocess.call([
 # 为SNP作硬过滤
 subprocess.call([
     f"{gatk}", "VariantFiltration", "-V", f"{os.path.splitext(vcf_gz)[0]}.snp.vcf.gz", "--filter-expression",
-    "\"QD < .0 || FS > 60.0 || MQ < 40.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0"", "--filter-name",
-"Filter", "-O", f"{os.path.splitext(vcf_gz)[0]}.snp.filter.vcf.gz"
+    "QD < .0 || FS > 60.0 || MQ < 40.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0", "--filter-name", "Filter", "-O", f"{os.path.splitext(vcf_gz)[0]}.snp.filter.vcf.gz"
 ])
 
 # 打印程序运行时间
