@@ -32,12 +32,12 @@ print(f"{datetime.datetime.now().strftime('%Y/%m/%d_%H:%M:%S')}")
 START = time.perf_counter()
 
 # 基因组路径
-bwa_ref = "/public/home/changjianye/goose_ref/AnsCyg"
+bwa_ref = "/public/home/changjianye/goose_ref/AnsCyg.fa"
 
 # 判断索引文件
-if not os.path.isfile(f"{bwa_ref}.fa.fai"):
+if not os.path.isfile(f"{bwa_ref}.fai"):
     print("Genome index not in genome dir ! Now , create it !!!")
-    subprocess.call([f"{samtools}", "faidx", f"{bwa_ref}.fa"])
+    subprocess.call([f"{samtools}", "faidx", f"{bwa_ref}"])
 else:
     print("file exists.")
 
@@ -77,17 +77,17 @@ mapping_outdir = os.path.join(output_dir, 'mapping')
 fastp_out = os.path.join(output_dir, 'fastp')
 
 # fastp
-subprocess.call([
-    f"{fastp}",
-    "-i", fq_1,
-    "-o", f"{trim_out}/{samplename}_fastp_1.fq.gz",
-    "-I", fq_2,
-    "-O", f"{trim_out}/{samplename}_fastp_2.fq.gz",
-    "--trim_poly_x",
-    "-h", f"{fastp_out}/{samplename}_fastp.html",
-    "-j", f"{fastp_out}/{samplename}_fastp.json",
-    "-w", str(cores)
-])
+# subprocess.call([
+#     f"{fastp}",
+#     "-i", fq_1,
+#     "-o", f"{trim_out}/{samplename}_fastp_1.fq.gz",
+#     "-I", fq_2,
+#     "-O", f"{trim_out}/{samplename}_fastp_2.fq.gz",
+#     "--trim_poly_x",
+#     "-h", f"{fastp_out}/{samplename}_fastp.html",
+#     "-j", f"{fastp_out}/{samplename}_fastp.json",
+#     "-w", str(cores)
+# ])
 
 # # 去接头
 # subprocess.call([
@@ -100,10 +100,19 @@ clean_fq2 = f"{trim_out}/{samplename}_fastp_2.fq.gz"
 
 label = f"@RG\\tID:{samplename}\\tPL:MGI\\tSM:{samplename}"  # 可以修改
 # 运行BWA
-subprocess.call([
-    f"{bwa}", "mem", "-t", str(cores), "-R", label, bwa_ref, clean_fq1, clean_fq2, "|",
-    f"{samtools}", "view", "-Sb", "-", ">", f"{mapping_outdir}/{samplename}.bam"
-])
+# 创建第一个子进程，执行 bwa mem 命令，并将其输出写入管道
+p1 = subprocess.Popen([
+    bwa, "mem", "-t", str(cores), "-R", label, bwa_ref, clean_fq1, clean_fq2
+], stdout=subprocess.PIPE)
+
+# 创建第二个子进程，执行 samtools view 命令，并将 p1 的输出作为输入
+p2 = subprocess.Popen([
+    samtools, "view", "-Sb", "-", "-o", f"{mapping_outdir}/{samplename}.bam"
+], stdin=p1.stdout)
+
+# 等待第二个子进程完成
+p2.communicate()
+
 print("** bwa mapping done **")
 
 bam = f"{mapping_outdir}/{samplename}.bam"
