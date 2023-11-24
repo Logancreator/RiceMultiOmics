@@ -16,7 +16,6 @@ base_output_dir = '/public/home/changjianye/WGS'
 # 软件路径
 fastqc = '/public/home/changjianye/miniconda3/envs/atac/bin/fastqc'
 fastp = '/public/home/changjianye/miniconda3/envs/atac/bin/fastp'
-trim_galore = '/public/home/changjianye/miniconda3/envs/atac/bin/trim_galore'
 samtools = '/public/home/changjianye/miniconda3/envs/atac/bin/samtools'
 bwa = '/public/software/bin/bwa'
 tabix = '/public/home/changjianye/miniconda3/envs/atac/bin/tabix'
@@ -77,23 +76,18 @@ mapping_outdir = os.path.join(output_dir, 'mapping')
 fastp_out = os.path.join(output_dir, 'fastp')
 
 # fastp
-# subprocess.call([
-#     f"{fastp}",
-#     "-i", fq_1,
-#     "-o", f"{trim_out}/{samplename}_fastp_1.fq.gz",
-#     "-I", fq_2,
-#     "-O", f"{trim_out}/{samplename}_fastp_2.fq.gz",
-#     "--trim_poly_x",
-#     "-h", f"{fastp_out}/{samplename}_fastp.html",
-#     "-j", f"{fastp_out}/{samplename}_fastp.json",
-#     "-w", str(cores)
-# ])
+subprocess.call([
+    f"{fastp}",
+    "-i", fq_1,
+    "-o", f"{trim_out}/{samplename}_fastp_1.fq.gz",
+    "-I", fq_2,
+    "-O", f"{trim_out}/{samplename}_fastp_2.fq.gz",
+    "--trim_poly_x",
+    "-h", f"{fastp_out}/{samplename}_fastp.html",
+    "-j", f"{fastp_out}/{samplename}_fastp.json",
+    "-w", str(cores)
+])
 
-# # 去接头
-# subprocess.call([
-#     f"{trim_galore}", "-output_dir", f"{trim_out}", "--paired", "--length", "25", "--quality", "25",
-#     "--stringency", "5", fq_1, fq_2, "--gzip"
-# ])
 
 clean_fq1 = f"{trim_out}/{samplename}_fastp_1.fq.gz"
 clean_fq2 = f"{trim_out}/{samplename}_fastp_2.fq.gz"
@@ -138,11 +132,17 @@ subprocess.call([f"{samtools}", "index", markdup_bam])
 print("** index done **")
 
 # GATK基因组路径
-gatk_ref = f"{bwa_ref}.fa"
+gatk_ref = f"{bwa_ref}"
 
 #制作字典
 subprocess.call([
+    "cd", f"{os.path.dirname(bwa_ref)}"
+])
+subprocess.call([
     f"{gatk}", "CreateSequenceDictionary", "-R", gatk_ref
+])
+subprocess.call([
+    "cd", f"${mapping_outdir}"
 ])
 print("** dict done **")
 
