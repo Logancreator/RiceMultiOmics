@@ -15,15 +15,17 @@ file1$Algorithm <- rownames(file1)
 
 file1=melt(file1,id.vars = c("Algorithm"))
 
-p1=ggplot(data = file1, mapping = aes(x = variable, y = value,fill=Algorithm))+
-  geom_bar(stat="identity",position=position_dodge(0.75))+
+file1$Algorithm = factor(file1$Algorithm,levels = c("align_bench_seq","align_bench_par(30t)","align_bench_wave(30t)","bsalign(no band)","TSTA"))
+
+p1=ggplot(data = file1, mapping = aes(x = variable, y = value,fill= Algorithm))+
+  geom_bar(stat="identity",position=position_dodge(1))+
   scale_fill_manual(values = c("darkorchid3","darkolivegreen4","goldenrod1","dodgerblue4","red"))+
   theme_classic()+
   xlab("Sequence length (bp)")+
   ylab("Time (ms)")+scale_y_break(c(35000,80000),#截断位置及范围
                                   space = 1,#间距大小
-                                  scales = 0.4);p1
-ggsave(filename = "file1.pdf",plot = p1, width = 6, height =3)
+                                  scales = 0.5);p1
+ggsave(filename = "file1.pdf",plot = p1, width = 8, height =4)
 
 ##########File2#############
 file2 = as.data.frame(read_excel("1.xlsx",range = "A2:E6"))
@@ -82,6 +84,9 @@ file4$Algorithm <- rownames(file4)
 
 file4=melt(file4,id.vars = c("Algorithm"))
 
+file4$Algorithm = factor(file4$Algorithm,levels = c("SPOA","abPOA","bsalign(no band)","TSTA"))
+
+
 p4=ggplot(data = file4, mapping = aes(x = variable, y = value, group=Algorithm,linetype =Algorithm,  shape =Algorithm, fill = Algorithm))+
   geom_bar(stat="identity",, position = 'dodge')+ 
   scale_linetype_manual(values = c(1,1,1,1,1))+ 
@@ -90,13 +95,15 @@ p4=ggplot(data = file4, mapping = aes(x = variable, y = value, group=Algorithm,l
   theme_classic()+
   xlab("Sequence Length * Quantity")+
   ylab("Time (ms)")+scale_y_break(c(50000,100000),#截断位置及范围
-                                   space = 0.8,#间距大小
-                                   scales = 0.3);p4
-ggsave(filename = "file4.pdf",plot = p4, width = 6, height =4)
+                                   space = 0.2,#间距大小
+                                   scales = 0.4);p4
+ggsave(filename = "file4.pdf",plot = p4, width = 7, height =4)
 
 variables <- c("5K*5", "10K*5", "20K*5", "50K*5", "5K*10", "10K*10", "20K*10", "50K*10")
 for (variable in variables) {
   subset <- file4[which(file4$variable == variable),]
+  subset$Algorithm = factor(subset$Algorithm,levels = c("SPOA","abPOA","bsalign(no band)","TSTA"))
+  
   p <- ggplot(data = subset, mapping = aes(x = variable, y = value, group = Algorithm, linetype = Algorithm, shape = Algorithm, fill = Algorithm)) +
     geom_bar(stat = "identity", position = 'dodge') +
     scale_linetype_manual(values = c(1, 1, 1, 1, 1)) +
