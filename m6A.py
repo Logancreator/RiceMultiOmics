@@ -3,11 +3,11 @@ import os
 import datetime
 
 # Specify the number of cores to use
-cores = 5
+cores = 1
 # Directory with the hisat2 genome index
-genome = "/public/home/changjianye/project/duck/hisat2/geese"
-bowtie2_index = "/public/home/changjianye/project/duck/rRNA/rRNA"
-STAR_index = /public/home/changjianye/project/duck/STAR_index/
+genome = "/public/home/changjianye/project/duck/hisat2/genome_addN"
+bowtie2_index = "/public/home/changjianye/m6A_ref/rRNA/rRNA"
+STAR_index = "/public/home/changjianye/m6A_ref/star_index"
 # Software path
 fastqc = "/public/home/changjianye/miniconda3/envs/atac/bin/fastqc"
 fastp = "/public/home/changjianye/miniconda3/envs/atac/bin/fastp"
@@ -26,10 +26,9 @@ def get_current_datetime():
     current_datetime = datetime.datetime.now()
     return current_datetime.strftime("%Y/%m/%d_%H:%M:%S")
 
-def main(fq_1, fq_2,genome, cores, output_prefix):
+def main(fq_1, fq_2,genome, cores, output_prefix, samplename):
 
     # Initialize variables
-    samplename = os.path.splitext(os.path.basename(fq_1))[0].split('_')[0]
     print("Sample name is", samplename)
 
     # Make all of the output directories
@@ -124,6 +123,16 @@ def main(fq_1, fq_2,genome, cores, output_prefix):
     print("Run time", past_datetime)
 
 if __name__ == "__main__":
-    fq_1 = "path/to/fq_1.fastq.gz"
-    fq_2 = "path/to/fq_2.fastq.gz"
+
+    parser = argparse.ArgumentParser(description='Process some files.')
+    parser.add_argument('--fq1', help='input fastq file 1')
+    parser.add_argument('--fq2', help='input fastq file 2')
+    parser.add_argument('--samplename', help='sample name')
+
+    args = parser.parse_args()
+
+    fq_1 = args.fq1
+    fq_2 = args.fq2
+    samplename = args.samplename
+    
     main(fq_1, fq_2)

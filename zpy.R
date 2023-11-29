@@ -18,13 +18,14 @@ file1=melt(file1,id.vars = c("Algorithm"))
 file1$Algorithm = factor(file1$Algorithm,levels = c("align_bench_seq","align_bench_par(30t)","align_bench_wave(30t)","bsalign(no band)","TSTA"))
 
 p1=ggplot(data = file1, mapping = aes(x = variable, y = value,fill= Algorithm))+
-  geom_bar(stat="identity",position=position_dodge(1))+
+  geom_bar(stat="identity",position=position_dodge(0.9),width = 0.8)+
   scale_fill_manual(values = c("darkorchid3","darkolivegreen4","goldenrod1","dodgerblue4","red"))+
   theme_classic()+
   xlab("Sequence length (bp)")+
   ylab("Time (ms)")+scale_y_break(c(35000,80000),#截断位置及范围
                                   space = 1,#间距大小
-                                  scales = 0.5);p1
+                                  scales = 0.5)+
+  scale_y_continuous(labels = scales::scientific);p1
 ggsave(filename = "file1.pdf",plot = p1, width = 8, height =4)
 
 ##########File2#############
@@ -48,7 +49,8 @@ p2=ggplot(data = file2, mapping = aes(x = factor(Threads,levels = c(5,10,20,30))
   scale_color_manual(values = c("darkorchid3","darkolivegreen4","goldenrod1","dodgerblue4"))+
   theme_classic()+
   xlab("Number of threads")+
-  ylab("Time (ms)")+ggtitle("Sequence Length: 200k (bp) - psa");p2
+  ylab("Time (ms)")+ggtitle("Sequence Length: 200k (bp) - psa")+
+  scale_y_continuous(labels = scales::scientific);p2
 ggsave(filename = "file2.pdf",plot = p2, width = 6, height =3)
 
 ##########File3#############
@@ -71,8 +73,9 @@ p3=ggplot(data=file3,mapping=aes(x=Threads,y=value,color=Block,group = Block))+g
   scale_color_manual(values = c("darkorchid3","darkolivegreen4","goldenrod1","dodgerblue4"))+
   theme_classic()+
   xlab("Number of threads")+
-  ylab("Time (ms)")+ggtitle("Sequence Length: 50k *10 (bp)");p3
-ggsave(filename = "file3.pdf",plot = p3, width = 4, height =3)
+  ylab("Time (ms)")+ggtitle("Sequence Length: 50k *10 (bp)")+
+  scale_y_continuous(labels = scales::scientific);p3
+ggsave(filename = "file3.pdf",plot = p3, width = 6, height =3)
 
 ##########File4#############
 #file4=read.csv("file4.csv",header=T,row.names = 1,check.names = F)
@@ -96,8 +99,9 @@ p4=ggplot(data = file4, mapping = aes(x = variable, y = value, group=Algorithm,l
   xlab("Sequence Length * Quantity")+
   ylab("Time (ms)")+scale_y_break(c(50000,100000),#截断位置及范围
                                    space = 0.2,#间距大小
-                                   scales = 0.4);p4
-ggsave(filename = "file4.pdf",plot = p4, width = 7, height =4)
+                                   scales = 0.4)+
+  scale_y_continuous(labels = scales::scientific);p4
+ggsave(filename = "file4.pdf",plot = p4, width = 8, height =4)
 
 variables <- c("5K*5", "10K*5", "20K*5", "50K*5", "5K*10", "10K*10", "20K*10", "50K*10")
 for (variable in variables) {
